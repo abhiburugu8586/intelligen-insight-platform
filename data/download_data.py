@@ -14,7 +14,7 @@ from datasets import load_dataset
 
 def download_sample(n: int = 500, out_path: str = "data/sample_reviews.csv") -> None:
     print(f"Loading amazon_polarity dataset (streaming first {n} rows)...")
-    ds = load_dataset("amazon_polarity", split="train", streaming=True)
+    ds = load_dataset("fancyzhx/amazon_polarity", split="train", streaming=True)
 
     rows = []
     for i, row in enumerate(ds):

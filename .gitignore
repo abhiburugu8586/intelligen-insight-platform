@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+data/sample_reviews.csv
+data/results.csv
+.env
+.DS_Store
+*.egg-info/

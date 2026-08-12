@@ -1,0 +1,86 @@
+"""
+Ties sentiment, classification, clustering, and the SHAP explainer into a
+single pipeline that can be run end-to-end over a CSV of reviews.
+
+Owner: Person C (integration)
+
+Usage:
+    python -m src.pipeline --input data/sample_reviews.csv --output data/results.csv
+"""
+
+from __future__ import annotations
+import argparse
+import pandas as pd
+
+from src.sentiment import SentimentAnalyzer
+from src.classification import TfidfCategoryClassifier, DEFAULT_CATEGORIES
+from src.clustering import ReviewClusterer
+from src.advanced_feature import ClassifierExplainer
+
+# NOTE: TfidfCategoryClassifier needs labelled training data to .fit() on.
+# Until your team creates/labels a real training set, this pipeline uses a
+# small bootstrap set of hand-labelled examples so everything runs
+# end-to-end. Swap BOOTSTRAP_TEXTS/BOOTSTRAP_LABELS for a real labelled
+# CSV (e.g. data/category_training_set.csv) once you have one.
+BOOTSTRAP_TEXTS = [
+    "The package arrived three weeks late and was damaged.",
+    "Shipping was delayed again, very frustrating.",
+    "Great quality, feels premium and well made.",
+    "Excellent build quality, exceeded expectations.",
+    "Way too expensive for what you get.",
+    "Not worth the price at all.",
+    "Support team never replied to my emails.",
+    "Customer service was unhelpful and slow.",
+]
+BOOTSTRAP_LABELS = [
+    "delivery", "delivery",
+    "product quality", "product quality",
+    "pricing", "pricing",
+    "customer support", "customer support",
+]
+
+
+def run_pipeline(input_csv: str, output_csv: str, n_clusters: int = 5) -> pd.DataFrame:
+    df = pd.read_csv(input_csv)
+    if "text" not in df.columns:
+        raise ValueError("Input CSV must have a 'text' column")
+
+    texts = df["text"].astype(str).tolist()
+
+    print(f"Running sentiment analysis on {len(texts)} reviews...")
+    sentiment_analyzer = SentimentAnalyzer()
+    sentiment_results = sentiment_analyzer.predict(texts)
+    df["sentiment"] = [r["label"] for r in sentiment_results]
+    df["sentiment_score"] = [r["score"] for r in sentiment_results]
+
+    print("Running classification...")
+    classifier = TfidfCategoryClassifier()
+    classifier.fit(BOOTSTRAP_TEXTS, BOOTSTRAP_LABELS)
+    df["category"] = classifier.predict(texts)
+
+    print(f"Running clustering (k={n_clusters})...")
+    clusterer = ReviewClusterer(n_clusters=n_clusters)
+    cluster_labels = clusterer.fit(texts)
+    df["cluster"] = cluster_labels
+    themes = clusterer.top_terms_per_cluster(texts, cluster_labels)
+    df["cluster_theme"] = df["cluster"].map(lambda c: ", ".join(themes.get(c, [])))
+
+    print("Building SHAP explainer (used interactively in the app, not per-row here)...")
+    _ = ClassifierExplainer(classifier, background_texts=BOOTSTRAP_TEXTS)
+    # Per-row SHAP explanations are generated on demand in the Streamlit
+    # app rather than for every row here, since they're relatively slow
+    # and mainly useful when a user selects a specific review.
+
+    df.to_csv(output_csv, index=False)
+    print(f"Saved results to {output_csv}")
+    return df
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=str, default="data/sample_reviews.csv")
+    parser.add_argument("--output", type=str, default="data/results.csv")
+    parser.add_argument("--clusters", type=int, default=5)
+    args = parser.parse_args()
+
+    run_pipeline(args.input, args.output, n_clusters=args.clusters)

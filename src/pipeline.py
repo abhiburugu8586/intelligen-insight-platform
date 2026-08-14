@@ -17,27 +17,35 @@ from src.classification import TfidfCategoryClassifier, DEFAULT_CATEGORIES
 from src.clustering import ReviewClusterer
 from src.advanced_feature import ClassifierExplainer
 
-# NOTE: TfidfCategoryClassifier needs labelled training data to .fit() on.
-# Until your team creates/labels a real training set, this pipeline uses a
-# small bootstrap set of hand-labelled examples so everything runs
-# end-to-end. Swap BOOTSTRAP_TEXTS/BOOTSTRAP_LABELS for a real labelled
-# CSV (e.g. data/category_training_set.csv) once you have one.
-BOOTSTRAP_TEXTS = [
-    "The package arrived three weeks late and was damaged.",
-    "Shipping was delayed again, very frustrating.",
-    "Great quality, feels premium and well made.",
-    "Excellent build quality, exceeded expectations.",
-    "Way too expensive for what you get.",
-    "Not worth the price at all.",
-    "Support team never replied to my emails.",
-    "Customer service was unhelpful and slow.",
-]
-BOOTSTRAP_LABELS = [
-    "delivery", "delivery",
-    "product quality", "product quality",
-    "pricing", "pricing",
-    "customer support", "customer support",
-]
+# Loads the real hand-labelled + corrected training data (see
+# data/category_training_set.csv). Falls back to a small toy set only if
+# that file doesn't exist yet, so the pipeline still runs for anyone who
+# hasn't generated it.
+import os
+
+_training_path = "data/category_training_set.csv"
+if os.path.exists(_training_path):
+    _training_df = pd.read_csv(_training_path)
+    _training_df = _training_df[_training_df["category"].notna() & (_training_df["category"] != "")]
+    BOOTSTRAP_TEXTS = _training_df["text"].tolist()
+    BOOTSTRAP_LABELS = _training_df["category"].tolist()
+else:
+    BOOTSTRAP_TEXTS = [
+        "The package arrived three weeks late and was damaged.",
+        "Shipping was delayed again, very frustrating.",
+        "Great quality, feels premium and well made.",
+        "Excellent build quality, exceeded expectations.",
+        "Way too expensive for what you get.",
+        "Not worth the price at all.",
+        "Support team never replied to my emails.",
+        "Customer service was unhelpful and slow.",
+    ]
+    BOOTSTRAP_LABELS = [
+        "delivery", "delivery",
+        "product quality", "product quality",
+        "pricing", "pricing",
+        "customer support", "customer support",
+    ]
 
 
 def run_pipeline(input_csv: str, output_csv: str, n_clusters: int = 5) -> pd.DataFrame:

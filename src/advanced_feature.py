@@ -61,26 +61,53 @@ class ClassifierExplainer:
 
 
 if __name__ == "__main__":
-    # Quick manual test — mirrors the toy example in classification.py
-    texts = [
-        "The package arrived three weeks late and was damaged.",
-        "Great quality, feels premium and well made.",
-        "Way too expensive for what you get.",
-        "Support team never replied to my emails.",
-        "Shipping was delayed again, very frustrating.",
-        "Excellent build quality, exceeded expectations.",
-    ]
-    labels = ["delivery", "product quality", "pricing", "customer support", "delivery", "product quality"]
+    import os
+    import pandas as pd
+
+    # Use the real, hand-labelled training data instead of a toy example set,
+    # so explanations reflect the actual model used in the app.
+    training_path = "data/category_training_set.csv"
+    if os.path.exists(training_path):
+        df = pd.read_csv(training_path)
+        df = df[df["category"].notna() & (df["category"] != "")]
+        texts = df["text"].tolist()
+        labels = df["category"].tolist()
+        print(f"Training on {len(texts)} real labelled examples from {training_path}")
+    else:
+        # Fallback toy set only used if the real training data isn't present
+        texts = [
+            "The package arrived three weeks late and was damaged.",
+            "Great quality, feels premium and well made.",
+            "Way too expensive for what you get.",
+            "Support team never replied to my emails.",
+        ]
+        labels = ["delivery", "product quality", "pricing", "customer support"]
+        print("WARNING: data/category_training_set.csv not found, using toy fallback data")
 
     clf = TfidfCategoryClassifier()
     clf.fit(texts, labels)
 
     explainer = ClassifierExplainer(clf, background_texts=texts)
-    explainer.explain_and_plot_local(
-        "My order never showed up on time.",
-        out_path="shap_explanation_example.html",
-    )
-    print("Saved example SHAP explanation to shap_explanation_example.html")
+
+    # Generate explanations for a few different example reviews covering
+    # different categories, so we have several ready-made outputs for the
+    # video/report rather than just one.
+    demo_reviews = [
+        "My order never showed up on time and support never replied to my emails.",
+        "This is way overpriced for the quality you actually get.",
+        "Arrived broken and the box was completely crushed during shipping.",
+        "Excellent build quality, definitely worth the price I paid.",
+    ]
+
+    os.makedirs("data/shap_examples", exist_ok=True)
+    for i, review in enumerate(demo_reviews):
+        prediction = clf.predict([review])[0]
+        out_path = f"data/shap_examples/example_{i+1}_{prediction.replace(' ', '_')}.html"
+        explainer.explain_and_plot_local(review, out_path=out_path)
+        print(f"[{prediction}] {review}")
+        print(f"  -> saved explanation to {out_path}\n")
+
+    print("Done. Open any of the saved HTML files in a browser to see the SHAP explanation.")
 
 # --- Alternative: explaining a transformer pipeline instead of sklearn ---
 # from transformers import pipeline

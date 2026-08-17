@@ -16,7 +16,10 @@ from sklearn.decomposition import PCA
 
 
 class ReviewClusterer:
-    def __init__(self, n_clusters: int = 5, embedding_model: str = "all-MiniLM-L6-v2"):
+    def __init__(self, n_clusters: int = 7, embedding_model: str = "all-MiniLM-L6-v2"):
+        # n_clusters=7 was chosen based on silhouette score analysis across
+        # k=2 to k=7 on the sample review data (see src/finalize_clustering.py
+        # and data/cluster_k_selection.png for the comparison chart).
         self.n_clusters = n_clusters
         self.embedder = SentenceTransformer(embedding_model)
         self.kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)

@@ -18,7 +18,15 @@ DEFAULT_CATEGORIES = ["delivery", "product quality", "pricing", "customer suppor
 
 
 class ZeroShotCategoryClassifier:
-    """Classifies text against a set of category labels with no training required."""
+    """
+    Classifies text against a set of category labels with no training
+    required. Evaluated as an alternative to TfidfCategoryClassifier below,
+    but not used in the final pipeline: SHAP requires access to a model's
+    internals (predict_proba over a fixed feature space) to generate
+    explanations, which the trainable TF-IDF model provides and this
+    zero-shot pipeline does not expose in the same way. Kept here as a
+    documented alternative and for comparison.
+    """
 
     def __init__(self, categories: Sequence[str] = DEFAULT_CATEGORIES,
                  model_name: str = "facebook/bart-large-mnli"):

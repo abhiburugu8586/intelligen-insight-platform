@@ -1,16 +1,10 @@
 """
-Classification module.
+Classification: tags each review with a category (delivery, product
+quality, pricing, customer support, other).
 
-Tags each review with a category (e.g. delivery, quality, pricing, support,
-other). Two approaches are provided:
-
-1. ZeroShotCategoryClassifier - no training data needed, uses a pretrained
-   zero-shot model. Good for getting something working immediately.
-2. TfidfCategoryClassifier - a simple trainable scikit-learn classifier.
-   Use this if you have (or create) a small labelled training set and want
-   a "real" trained model to explain with SHAP later.
-
-Owner: Person A
+Two classifiers are provided - a zero-shot model (no training needed) and
+a trainable TF-IDF + Logistic Regression model (used for the SHAP
+explainability feature, since it exposes model internals SHAP can work with).
 """
 
 from __future__ import annotations
@@ -24,7 +18,7 @@ DEFAULT_CATEGORIES = ["delivery", "product quality", "pricing", "customer suppor
 
 
 class ZeroShotCategoryClassifier:
-    """No training required - classifies text against a set of category labels."""
+    """Classifies text against a set of category labels with no training required."""
 
     def __init__(self, categories: Sequence[str] = DEFAULT_CATEGORIES,
                  model_name: str = "facebook/bart-large-mnli"):
@@ -40,11 +34,7 @@ class ZeroShotCategoryClassifier:
 
 
 class TfidfCategoryClassifier:
-    """
-    A trainable, explainable classifier (TF-IDF + Logistic Regression).
-    Recommended for use with the SHAP advanced feature, since SHAP works
-    cleanly with scikit-learn models.
-    """
+    """Trainable TF-IDF + Logistic Regression category classifier."""
 
     def __init__(self):
         self.model = Pipeline([
@@ -67,9 +57,6 @@ class TfidfCategoryClassifier:
 
 
 if __name__ == "__main__":
-    # Quick manual test with a tiny toy training set.
-    # Replace with real (weak/self-labelled) training data - e.g. label a
-    # few hundred reviews by keyword rules or manually as a starting point.
     texts = [
         "The package arrived three weeks late and was damaged.",
         "Great quality, feels premium and well made.",

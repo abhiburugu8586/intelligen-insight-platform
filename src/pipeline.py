@@ -1,8 +1,6 @@
 """
 Ties sentiment, classification, clustering, and the SHAP explainer into a
-single pipeline that can be run end-to-end over a CSV of reviews.
-
-Owner: Person C (integration)
+single pipeline that runs end-to-end over a CSV of reviews.
 
 Usage:
     python -m src.pipeline --input data/sample_reviews.csv --output data/results.csv
@@ -10,18 +8,13 @@ Usage:
 
 from __future__ import annotations
 import argparse
+import os
 import pandas as pd
 
 from src.sentiment import SentimentAnalyzer
 from src.classification import TfidfCategoryClassifier, DEFAULT_CATEGORIES
 from src.clustering import ReviewClusterer
 from src.advanced_feature import ClassifierExplainer
-
-# Loads the real hand-labelled + corrected training data (see
-# data/category_training_set.csv). Falls back to a small toy set only if
-# that file doesn't exist yet, so the pipeline still runs for anyone who
-# hasn't generated it.
-import os
 
 _training_path = "data/category_training_set.csv"
 if os.path.exists(_training_path):
@@ -48,7 +41,7 @@ else:
     ]
 
 
-def run_pipeline(input_csv: str, output_csv: str, n_clusters: int = 5) -> pd.DataFrame:
+def run_pipeline(input_csv: str, output_csv: str, n_clusters: int = 7) -> pd.DataFrame:
     df = pd.read_csv(input_csv)
     if "text" not in df.columns:
         raise ValueError("Input CSV must have a 'text' column")
@@ -73,11 +66,8 @@ def run_pipeline(input_csv: str, output_csv: str, n_clusters: int = 5) -> pd.Dat
     themes = clusterer.top_terms_per_cluster(texts, cluster_labels)
     df["cluster_theme"] = df["cluster"].map(lambda c: ", ".join(themes.get(c, [])))
 
-    print("Building SHAP explainer (used interactively in the app, not per-row here)...")
+    print("Building SHAP explainer...")
     _ = ClassifierExplainer(classifier, background_texts=BOOTSTRAP_TEXTS)
-    # Per-row SHAP explanations are generated on demand in the Streamlit
-    # app rather than for every row here, since they're relatively slow
-    # and mainly useful when a user selects a specific review.
 
     df.to_csv(output_csv, index=False)
     print(f"Saved results to {output_csv}")
@@ -88,7 +78,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, default="data/sample_reviews.csv")
     parser.add_argument("--output", type=str, default="data/results.csv")
-    parser.add_argument("--clusters", type=int, default=5)
+    parser.add_argument("--clusters", type=int, default=7)
     args = parser.parse_args()
 
     run_pipeline(args.input, args.output, n_clusters=args.clusters)

@@ -1,8 +1,6 @@
 """
-Finds a good value for n_clusters using silhouette score (a standard,
-defensible way to justify the choice in your report, rather than picking a
-number arbitrarily), then generates a finished cluster analysis summary and
-chart ready for the report/video.
+Selects the best number of clusters (k) using silhouette score, then
+generates a cluster analysis summary and chart.
 
 Usage:
     python -m src.finalize_clustering
@@ -16,11 +14,7 @@ from src.clustering import ReviewClusterer
 
 
 def find_best_k(texts, k_range=range(2, 11)):
-    """
-    Tries several values of k and scores each with silhouette score
-    (higher is better, range -1 to 1). This gives a defensible, data-driven
-    justification for the final n_clusters choice instead of guessing.
-    """
+    """Scores each k in k_range with silhouette score (higher is better, range -1 to 1)."""
     results = []
     for k in k_range:
         clusterer = ReviewClusterer(n_clusters=k)
@@ -41,7 +35,7 @@ def main():
     best_k = int(scores_df.loc[scores_df["silhouette_score"].idxmax(), "k"])
     print(f"\nBest k based on silhouette score: {best_k}")
 
-    # Save the score comparison chart - useful evidence for the report
+    # score comparison chart
     plt.figure(figsize=(6, 4))
     plt.plot(scores_df["k"], scores_df["silhouette_score"], marker="o")
     plt.axvline(best_k, color="red", linestyle="--", label=f"chosen k={best_k}")
@@ -53,7 +47,7 @@ def main():
     plt.savefig("data/cluster_k_selection.png")
     print("Saved chart to data/cluster_k_selection.png")
 
-    # Now run final clustering with the chosen k and save a theme summary
+    # final clustering with the chosen k
     clusterer = ReviewClusterer(n_clusters=best_k)
     labels = clusterer.fit(texts)
     themes = clusterer.top_terms_per_cluster(texts, labels)

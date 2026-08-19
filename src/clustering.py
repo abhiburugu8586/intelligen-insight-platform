@@ -1,10 +1,6 @@
 """
-Clustering module.
-
-Embeds reviews with a sentence-transformer model, then clusters them with
-K-Means to surface emerging themes without needing predefined labels.
-
-Owner: Person B
+Clustering: embeds reviews with a sentence-transformer model, then groups
+them with K-Means to surface themes without needing predefined labels.
 """
 
 from __future__ import annotations
@@ -17,9 +13,8 @@ from sklearn.decomposition import PCA
 
 class ReviewClusterer:
     def __init__(self, n_clusters: int = 7, embedding_model: str = "all-MiniLM-L6-v2"):
-        # n_clusters=7 was chosen based on silhouette score analysis across
-        # k=2 to k=7 on the sample review data (see src/finalize_clustering.py
-        # and data/cluster_k_selection.png for the comparison chart).
+        # n_clusters=7 chosen via silhouette score analysis - see
+        # src/finalize_clustering.py and data/cluster_k_selection.png
         self.n_clusters = n_clusters
         self.embedder = SentenceTransformer(embedding_model)
         self.kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
@@ -39,8 +34,7 @@ class ReviewClusterer:
         return list(self.kmeans.predict(embeddings))
 
     def top_terms_per_cluster(self, texts: List[str], labels: np.ndarray, top_n: int = 8) -> Dict[int, List[str]]:
-        """Cheap, dependency-light way to describe each cluster's theme:
-        most frequent non-stopword tokens per cluster."""
+        """Returns the most frequent non-stopword terms for each cluster."""
         from sklearn.feature_extraction.text import CountVectorizer
 
         themes: Dict[int, List[str]] = {}

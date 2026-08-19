@@ -14,6 +14,7 @@ from datasets import load_dataset
 
 def download_sample(n: int = 500, out_path: str = "data/sample_reviews.csv") -> None:
     print(f"Loading amazon_polarity dataset (streaming first {n} rows)...")
+    # fancyzhx/amazon_polarity: current namespaced HF dataset ID
     ds = load_dataset("fancyzhx/amazon_polarity", split="train", streaming=True)
 
     rows = []
